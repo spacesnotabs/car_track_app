@@ -46,7 +46,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
             fetchVehicles();
             initializeForm();
         }
-    }, [isOpen, preSelectedVehicleId, initialData]);
+    }, [isOpen, preSelectedVehicleId, initialData?.id]);
 
     const initializeForm = () => {
         const now = new Date();
