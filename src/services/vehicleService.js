@@ -164,11 +164,8 @@ export const vehicleService = {
             if (!user) throw new Error('User not authenticated');
 
             const activityRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'activities', activityId);
-            await updateDoc(activityRef, {
-                ...activityData,
-                // Ensure date is ISO string if it was updated
-                date: new Date(activityData.date).toISOString()
-            });
+            // activityData.date is already an ISO string from ActivityModal, no need to convert again
+            await updateDoc(activityRef, activityData);
             return true;
         } catch (error) {
             console.error("Error updating activity: ", error);
