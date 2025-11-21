@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Fuel, Wrench, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { Search, Filter, Fuel, Wrench, Edit2, Trash2, Loader2, Plus, Database } from 'lucide-react';
 import { vehicleService } from '../services/vehicleService';
-import FuelLogModal from '../components/Dashboard/FuelLogModal';
+import ActivityModal from '../components/Dashboard/ActivityModal';
 
 const Activities = () => {
     const [loading, setLoading] = useState(true);
@@ -12,6 +12,8 @@ const Activities = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState(null);
+
+    const [migrating, setMigrating] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -29,14 +31,15 @@ const Activities = () => {
             let allLogs = [];
             await Promise.all(vehicles.map(async (vehicle) => {
                 try {
-                    const logs = await vehicleService.getFuelLogs(vehicle.id);
+                    const logs = await vehicleService.getActivities(vehicle.id);
                     const logsWithVehicle = logs.map(log => ({
                         ...log,
-                        type: 'Fuel',
+                        // Ensure type is set (defaults to Fuel if missing, though migration should fix this)
+                        type: log.type || 'Fuel',
                         vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
                         vehicleId: vehicle.id,
                         // Create a searchable string
-                        searchString: `${vehicle.year} ${vehicle.make} ${vehicle.model} Fuel`.toLowerCase()
+                        searchString: `${vehicle.year} ${vehicle.make} ${vehicle.model} ${log.type || 'Fuel'} ${log.serviceType || ''}`.toLowerCase()
                     }));
                     allLogs = [...allLogs, ...logsWithVehicle];
                 } catch (err) {
@@ -67,11 +70,17 @@ const Activities = () => {
             const lowerTerm = searchTerm.toLowerCase();
             result = result.filter(a =>
                 a.searchString.includes(lowerTerm) ||
-                (a.type && a.type.toLowerCase().includes(lowerTerm))
+                (a.type && a.type.toLowerCase().includes(lowerTerm)) ||
+                (a.notes && a.notes.toLowerCase().includes(lowerTerm))
             );
         }
 
         setFilteredActivities(result);
+    };
+
+    const handleAdd = () => {
+        setEditingActivity(null);
+        setIsModalOpen(true);
     };
 
     const handleEdit = (activity) => {
@@ -99,10 +108,7 @@ const Activities = () => {
         if (!activity) return;
 
         try {
-            if (activity.type === 'Fuel') {
-                await vehicleService.deleteFuelLog(activity.vehicleId, activity.id);
-            }
-            // Add other types here later
+            await vehicleService.deleteActivity(activity.vehicleId, activity.id);
             setDeletingId(null);
             setSelectedActivities(prev => prev.filter(selectedId => selectedId !== id));
             fetchData(); // Refresh list
@@ -154,10 +160,7 @@ const Activities = () => {
                 selectedActivities.map(async (id) => {
                     const activity = activities.find(a => a.id === id);
                     if (!activity) return;
-
-                    if (activity.type === 'Fuel') {
-                        await vehicleService.deleteFuelLog(activity.vehicleId, activity.id);
-                    }
+                    await vehicleService.deleteActivity(activity.vehicleId, activity.id);
                 })
             );
 
@@ -168,6 +171,22 @@ const Activities = () => {
             alert("Failed to delete selected activities.");
         } finally {
             setBulkDeleting(false);
+        }
+    };
+
+    const handleMigration = async () => {
+        if (!window.confirm("This will migrate your old Fuel Logs to the new Activities storage. Only do this once. Proceed?")) return;
+
+        try {
+            setMigrating(true);
+            const count = await vehicleService.migrateFuelLogsToActivities();
+            alert(`Migration complete! Moved ${count} logs.`);
+            fetchData();
+        } catch (error) {
+            console.error("Migration failed", error);
+            alert("Migration failed. Check console for details.");
+        } finally {
+            setMigrating(false);
         }
     };
 
@@ -203,6 +222,24 @@ const Activities = () => {
                     <h1 className="text-3xl font-bold text-text-primary mb-2">Activities</h1>
                     <p className="text-slate-400">View and manage your vehicle history.</p>
                 </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleMigration}
+                        disabled={migrating}
+                        className="btn btn-ghost text-text-secondary hover:text-text-primary text-sm flex items-center gap-2"
+                        title="Run this once to move old logs to new system"
+                    >
+                        {migrating ? <Loader2 className="animate-spin" size={16} /> : <Database size={16} />}
+                        Migrate Data
+                    </button>
+                    <button
+                        onClick={handleAdd}
+                        className="btn btn-primary flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                        <Plus size={20} />
+                        Add Activity
+                    </button>
+                </div>
             </div>
 
             {/* Search and Filter Bar */}
@@ -210,7 +247,7 @@ const Activities = () => {
                 <div className="relative flex-1">
                     <input
                         type="text"
-                        placeholder="Search by vehicle or activity type..."
+                        placeholder="Search by vehicle, type, or notes..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-10 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
@@ -292,6 +329,9 @@ const Activities = () => {
                                         </td>
                                         <td className="p-4 text-text-secondary whitespace-nowrap">
                                             {new Date(activity.date).toLocaleDateString()}
+                                            <div className="text-xs text-text-secondary/70">
+                                                {new Date(activity.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                            </div>
                                         </td>
                                         <td className="p-4 text-text-primary font-medium whitespace-nowrap">
                                             {activity.vehicleName}
@@ -299,11 +339,28 @@ const Activities = () => {
                                         <td className="p-4 text-text-secondary">
                                             {activity.type === 'Fuel' && (
                                                 <div>
-                                                    <span>
+                                                    <span className="font-medium text-text-primary">
                                                         {activity.amount} {activity.fuelType === 'Electric' ? 'kWh' : 'gal'}
-                                                        <span className="text-text-secondary mx-2">&middot;</span>
+                                                    </span>
+                                                    <span className="text-text-secondary mx-2">&middot;</span>
+                                                    <span>
                                                         ${activity.pricePerUnit}/{activity.fuelType === 'Electric' ? 'kWh' : 'gal'}
                                                     </span>
+                                                    <div className="text-text-secondary text-sm mt-1">
+                                                        Odometer: {formatOdometer(activity.odometer)}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {activity.type === 'Service' && (
+                                                <div>
+                                                    <span className="font-medium text-text-primary">
+                                                        {activity.serviceType}
+                                                    </span>
+                                                    {activity.notes && (
+                                                        <div className="text-text-secondary text-sm mt-1 line-clamp-1">
+                                                            {activity.notes}
+                                                        </div>
+                                                    )}
                                                     <div className="text-text-secondary text-sm mt-1">
                                                         Odometer: {formatOdometer(activity.odometer)}
                                                     </div>
@@ -354,7 +411,7 @@ const Activities = () => {
             </div>
 
             {/* Edit Modal */}
-            <FuelLogModal
+            <ActivityModal
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
                 onSave={handleModalSave}
