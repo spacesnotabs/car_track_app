@@ -148,10 +148,13 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
             };
 
             if (type === 'Fuel') {
+                // Look up the selected vehicle's fuelType
+                const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId);
                 activityPayload = {
                     ...activityPayload,
                     amount: parseFloat(fuelData.amount),
-                    pricePerUnit: fuelData.pricePerUnit ? parseFloat(fuelData.pricePerUnit) : null
+                    pricePerUnit: fuelData.pricePerUnit ? parseFloat(fuelData.pricePerUnit) : null,
+                    fuelType: selectedVehicle && selectedVehicle.fuelType ? selectedVehicle.fuelType : 'Gas'
                 };
             } else if (type === 'Service') {
                 activityPayload = {
