@@ -92,20 +92,20 @@ export const vehicleService = {
         }
     },
 
-    // Add a fuel log
-    addFuelLog: async (vehicleId, logData) => {
+    // Add an activity (Fuel Log or Service)
+    addActivity: async (vehicleId, activityData) => {
         try {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
-            const logsRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs');
-            const docRef = await addDoc(logsRef, {
-                ...logData,
+            const activitiesRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'activities');
+            const docRef = await addDoc(activitiesRef, {
+                ...activityData,
                 createdAt: new Date().toISOString()
             });
 
             // Update vehicle odometer if the new log has a higher value AND is newer than the last manual update
-            if (logData.odometer) {
+            if (activityData.odometer) {
                 const vehicleRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
 
                 try {
@@ -113,14 +113,13 @@ export const vehicleService = {
                     if (vehicleSnap.exists()) {
                         const vehicleData = vehicleSnap.data();
                         const lastManualUpdate = vehicleData.odometerUpdatedAt ? new Date(vehicleData.odometerUpdatedAt) : new Date(0);
-                        const logDate = new Date(logData.date);
+                        const activityDate = new Date(activityData.date);
 
                         // Only update if the log is newer than the last manual update AND the value is higher
-                        // This prevents accidental rollbacks if a user adds a past log but forgets to change the date
                         const currentOdometer = vehicleData.odometer || 0;
-                        if (logDate > lastManualUpdate && logData.odometer > currentOdometer) {
+                        if (activityDate > lastManualUpdate && activityData.odometer > currentOdometer) {
                             await updateDoc(vehicleRef, {
-                                odometer: logData.odometer
+                                odometer: activityData.odometer
                             });
                         }
                     }
@@ -131,73 +130,116 @@ export const vehicleService = {
 
             return docRef.id;
         } catch (error) {
-            console.error("Error adding fuel log: ", error);
+            console.error("Error adding activity: ", error);
             throw error;
         }
     },
 
-    // Get fuel logs for a vehicle
-    getFuelLogs: async (vehicleId) => {
+    // Get activities for a vehicle
+    getActivities: async (vehicleId) => {
         try {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
-            const logsRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs');
-            // Ideally we should order by date, but for now let's just get them all
-            // In a real app, you'd want to use query(logsRef, orderBy('date', 'desc'))
-            // but that requires creating an index in Firestore.
-            const querySnapshot = await getDocs(logsRef);
+            const activitiesRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'activities');
+            const querySnapshot = await getDocs(activitiesRef);
 
-            const logs = querySnapshot.docs.map(doc => ({
+            const activities = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
 
-            // Sort in memory to avoid index requirement for now
-            return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            // Sort by date descending
+            return activities.sort((a, b) => new Date(b.date) - new Date(a.date));
         } catch (error) {
-            console.error("Error getting fuel logs: ", error);
+            console.error("Error getting activities: ", error);
             throw error;
         }
     },
 
-    // Update a fuel log
-    updateFuelLog: async (vehicleId, logId, logData) => {
+    // Update an activity
+    updateActivity: async (vehicleId, activityId, activityData) => {
         try {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
-            const logRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs', logId);
-            await updateDoc(logRef, {
-                ...logData,
+            const activityRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'activities', activityId);
+            await updateDoc(activityRef, {
+                ...activityData,
                 // Ensure date is ISO string if it was updated
-                date: new Date(logData.date).toISOString()
+                date: new Date(activityData.date).toISOString()
             });
             return true;
         } catch (error) {
-            console.error("Error updating fuel log: ", error);
+            console.error("Error updating activity: ", error);
             throw error;
         }
     },
 
-    // Delete a fuel log
-    deleteFuelLog: async (vehicleId, logId) => {
+    // Delete an activity
+    deleteActivity: async (vehicleId, activityId) => {
         try {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
-            const logRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs', logId);
-            await deleteDoc(logRef);
+            const activityRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'activities', activityId);
+            await deleteDoc(activityRef);
             return true;
         } catch (error) {
-            console.error("Error deleting fuel log: ", error);
+            console.error("Error deleting activity: ", error);
             throw error;
         }
     },
 
-    // Calculate efficiency based on a rolling window of recent logs
-    calculateEfficiency: (logs, windowSize = DEFAULT_EFFICIENCY_WINDOW) => {
-        const { average } = aggregateEfficiencyWindow(logs, windowSize);
+    // Calculate efficiency based on a rolling window of recent logs (Fuel type only)
+    calculateEfficiency: (activities, windowSize = DEFAULT_EFFICIENCY_WINDOW) => {
+        const fuelLogs = activities.filter(a => a.type === 'Fuel');
+        const { average } = aggregateEfficiencyWindow(fuelLogs, windowSize);
         return average;
+    },
+
+    // Migration function to move fuelLogs to activities
+    migrateFuelLogsToActivities: async () => {
+        try {
+            const user = auth.currentUser;
+            if (!user) throw new Error('User not authenticated');
+
+            const vehiclesRef = collection(db, 'users', user.uid, 'vehicles');
+            const vehiclesSnap = await getDocs(vehiclesRef);
+
+            let count = 0;
+
+            for (const vehicleDoc of vehiclesSnap.docs) {
+                const vehicleId = vehicleDoc.id;
+                const logsRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs');
+                const logsSnap = await getDocs(logsRef);
+
+                if (logsSnap.empty) continue;
+
+                const activitiesRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'activities');
+
+                // Process in parallel for speed, but sequentially per vehicle is safer
+                await Promise.all(logsSnap.docs.map(async (logDoc) => {
+                    const logData = logDoc.data();
+
+                    // Add to activities
+                    await addDoc(activitiesRef, {
+                        ...logData,
+                        type: 'Fuel', // All legacy logs are Fuel
+                        migratedAt: new Date().toISOString()
+                    });
+
+                    // Delete old log
+                    await deleteDoc(doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs', logDoc.id));
+                    count++;
+                }));
+            }
+
+            console.log(`Migrated ${count} logs.`);
+            return count;
+        } catch (error) {
+            console.error("Migration failed:", error);
+            throw error;
+        }
     }
 };
