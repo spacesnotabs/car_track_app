@@ -164,13 +164,11 @@ export const vehicleService = {
             if (!user) throw new Error('User not authenticated');
 
             const activityRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'activities', activityId);
-
-            const updates = { ...activityData };
-            if (activityData.date) {
-                updates.date = new Date(activityData.date).toISOString();
-            }
-
-            await updateDoc(activityRef, updates);
+            await updateDoc(activityRef, {
+                ...activityData,
+                // Ensure date is ISO string if it was updated
+                date: new Date(activityData.date).toISOString()
+            });
             return true;
         } catch (error) {
             console.error("Error updating activity: ", error);
@@ -220,21 +218,33 @@ export const vehicleService = {
 
                 const activitiesRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'activities');
 
-                // Process in parallel for speed, but sequentially per vehicle is safer
-                await Promise.all(logsSnap.docs.map(async (logDoc) => {
+                // Phase 1: Copy all logs, collect successfully migrated log IDs
+                const migratedLogIds = [];
+                for (const logDoc of logsSnap.docs) {
                     const logData = logDoc.data();
+                    try {
+                        await addDoc(activitiesRef, {
+                            ...logData,
+                            type: 'Fuel', // All legacy logs are Fuel
+                            migratedAt: new Date().toISOString()
+                        });
+                        migratedLogIds.push(logDoc.id);
+                    } catch (err) {
+                        console.error(`Failed to migrate log ${logDoc.id} for vehicle ${vehicleId}:`, err);
+                        // Do not delete this log
+                    }
+                }
 
-                    // Add to activities
-                    await addDoc(activitiesRef, {
-                        ...logData,
-                        type: 'Fuel', // All legacy logs are Fuel
-                        migratedAt: new Date().toISOString()
-                    });
-
-                    // Delete old log
-                    await deleteDoc(doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs', logDoc.id));
-                    count++;
-                }));
+                // Phase 2: Delete only successfully migrated logs
+                for (const logId of migratedLogIds) {
+                    try {
+                        await deleteDoc(doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fuelLogs', logId));
+                        count++;
+                    } catch (err) {
+                        console.error(`Failed to delete log ${logId} for vehicle ${vehicleId}:`, err);
+                        // Optionally, record for retry
+                    }
+                }
             }
 
             console.log(`Migrated ${count} logs.`);

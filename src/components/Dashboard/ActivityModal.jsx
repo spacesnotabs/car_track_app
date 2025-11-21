@@ -46,7 +46,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
             fetchVehicles();
             initializeForm();
         }
-    }, [isOpen, preSelectedVehicleId, initialData]);
+    }, [isOpen, preSelectedVehicleId, initialData?.id]);
 
     const initializeForm = () => {
         const now = new Date();
@@ -138,27 +138,23 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
         e.preventDefault();
         setLoading(true);
         try {
-            const parsedOdometer = parseFloat(formData.odometer);
-            if (isNaN(parsedOdometer)) throw new Error("Invalid odometer value");
-
             // Prepare payload
             let activityPayload = {
-                vehicleId: formData.vehicleId,
                 date: new Date(formData.date).toISOString(),
-                odometer: parsedOdometer,
+                odometer: parseFloat(formData.odometer),
                 totalCost: formData.totalCost ? parseFloat(formData.totalCost) : null,
                 notes: formData.notes,
                 type: type
             };
 
             if (type === 'Fuel') {
-                const parsedAmount = parseFloat(fuelData.amount);
-                if (isNaN(parsedAmount)) throw new Error("Invalid fuel amount");
-
+                // Look up the selected vehicle's fuelType
+                const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId);
                 activityPayload = {
                     ...activityPayload,
-                    amount: parsedAmount,
-                    pricePerUnit: fuelData.pricePerUnit ? parseFloat(fuelData.pricePerUnit) : null
+                    amount: parseFloat(fuelData.amount),
+                    pricePerUnit: fuelData.pricePerUnit ? parseFloat(fuelData.pricePerUnit) : null,
+                    fuelType: selectedVehicle && selectedVehicle.fuelType ? selectedVehicle.fuelType : 'Gas'
                 };
             } else if (type === 'Service') {
                 activityPayload = {
@@ -177,7 +173,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
             onClose();
         } catch (error) {
             console.error("Error saving activity:", error);
-            alert(error.message || "Failed to save activity. Please try again.");
+            alert("Failed to save activity. Please try again.");
         } finally {
             setLoading(false);
         }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Fuel, Loader2, Wrench, Activity } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import VehicleCard from '../components/Dashboard/VehicleCard';
 import AlertSection from '../components/Dashboard/AlertSection';
 import ActivitySection from '../components/Dashboard/ActivitySection';
