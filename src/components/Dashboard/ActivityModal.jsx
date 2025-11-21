@@ -140,7 +140,6 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
         try {
             // Prepare payload
             let activityPayload = {
-                vehicleId: formData.vehicleId,
                 date: new Date(formData.date).toISOString(),
                 odometer: parseFloat(formData.odometer),
                 totalCost: formData.totalCost ? parseFloat(formData.totalCost) : null,
