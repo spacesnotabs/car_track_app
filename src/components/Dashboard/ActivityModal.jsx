@@ -138,21 +138,37 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
         e.preventDefault();
         setLoading(true);
         try {
+            // Validate odometer field
+            const odometerValue = parseFloat(formData.odometer);
+            if (isNaN(odometerValue) || odometerValue < 0) {
+                alert("Please enter a valid odometer reading (must be a positive number).");
+                setLoading(false);
+                return;
+            }
+
             // Prepare payload
             let activityPayload = {
                 date: new Date(formData.date).toISOString(),
-                odometer: parseFloat(formData.odometer),
+                odometer: odometerValue,
                 totalCost: formData.totalCost ? parseFloat(formData.totalCost) : null,
                 notes: formData.notes,
                 type: type
             };
 
             if (type === 'Fuel') {
+                // Validate fuel amount field
+                const amountValue = parseFloat(fuelData.amount);
+                if (isNaN(amountValue) || amountValue <= 0) {
+                    alert("Please enter a valid fuel amount (must be a positive number).");
+                    setLoading(false);
+                    return;
+                }
+
                 // Look up the selected vehicle's fuelType
                 const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId);
                 activityPayload = {
                     ...activityPayload,
-                    amount: parseFloat(fuelData.amount),
+                    amount: amountValue,
                     pricePerUnit: fuelData.pricePerUnit ? parseFloat(fuelData.pricePerUnit) : null,
                     fuelType: selectedVehicle && selectedVehicle.fuelType ? selectedVehicle.fuelType : 'Gas'
                 };
