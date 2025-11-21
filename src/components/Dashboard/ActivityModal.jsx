@@ -140,7 +140,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
         try {
             // Validate odometer field
             const odometerValue = parseFloat(formData.odometer);
-            if (isNaN(odometerValue) || odometerValue < 0) {
+            if (isNaN(odometerValue) || odometerValue <= 0) {
                 alert("Please enter a valid odometer reading (must be a positive number).");
                 setLoading(false);
                 return;
