@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  /* Default values, will be overridden by ThemeContext */
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
   --bg-card: #1e293b;
@@ -23,15 +24,22 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 * {
   box-sizing: border-box;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 a {
   color: var(--accent-primary);
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent-hover);
 }
 
 button {
@@ -54,7 +62,7 @@ button {
   border-radius: var(--radius);
   font-weight: 500;
   border: none;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .btn-primary {
@@ -74,6 +82,7 @@ button {
 
 .btn-outline:hover {
   background-color: var(--bg-secondary);
+  border-color: var(--text-primary);
 }
 
 .card {
@@ -81,4 +90,31 @@ button {
   border-radius: var(--radius);
   padding: 1.5rem;
   border: 1px solid var(--border-color);
+}
+
+/* Form Elements */
+input,
+select,
+textarea {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  display: block;
 }

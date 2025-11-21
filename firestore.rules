@@ -9,16 +9,16 @@ service cloud.firestore {
       // Vehicles subcollection - only accessible by the user who owns it
       match /vehicles/{vehicleId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-      
-      // Fuel logs subcollection - only accessible by the user who owns it
-      match /fuelLogs/{logId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-      
-      // Maintenance logs subcollection - only accessible by the user who owns it
-      match /maintenanceLogs/{logId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        
+        // Fuel logs subcollection - nested under vehicle
+        match /fuelLogs/{logId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+        
+        // Maintenance logs subcollection - nested under vehicle
+        match /maintenanceLogs/{logId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
       }
     }
   }

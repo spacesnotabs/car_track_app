@@ -17,16 +17,16 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950">
-            <div className="card w-full max-w-md text-center">
+        <div className="min-h-screen flex items-center justify-center bg-primary">
+            <div className="card w-full max-w-md text-center bg-card border border-border p-8 rounded-2xl shadow-xl">
                 <div className="flex justify-center mb-6">
-                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center">
-                        <Car size={32} className="text-blue-500" />
+                    <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center">
+                        <Car size={32} className="text-accent" />
                     </div>
                 </div>
 
-                <h1 className="text-2xl font-bold mb-2 text-white">Welcome to CarTrack</h1>
-                <p className="text-slate-400 mb-8">Sign in to manage your vehicle maintenance and fuel logs.</p>
+                <h1 className="text-2xl font-bold mb-2 text-text-primary">Welcome to CarTrack</h1>
+                <p className="text-text-secondary mb-8">Sign in to manage your vehicle maintenance and fuel logs.</p>
 
                 {error && (
                     <div className="bg-red-500/10 text-red-500 p-3 rounded mb-4 text-sm">
@@ -36,7 +36,7 @@ const Login = () => {
 
                 <button
                     onClick={handleLogin}
-                    className="w-full btn btn-primary flex items-center justify-center gap-2 py-3"
+                    className="w-full btn btn-primary flex items-center justify-center gap-2 py-3 bg-white hover:bg-gray-50 text-slate-900 font-bold rounded-xl transition-colors"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path

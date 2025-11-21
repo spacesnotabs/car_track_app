@@ -3,6 +3,7 @@ import { Plus, Fuel, Loader2 } from 'lucide-react';
 import VehicleCard from '../components/Dashboard/VehicleCard';
 import AlertSection from '../components/Dashboard/AlertSection';
 import ActivitySection from '../components/Dashboard/ActivitySection';
+import FuelLogModal from '../components/Dashboard/FuelLogModal';
 import { vehicleService } from '../services/vehicleService';
 import { auth } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -11,6 +12,7 @@ const Dashboard = () => {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [isFuelModalOpen, setIsFuelModalOpen] = useState(false);
 
     // Mock Data for other sections (to be connected later)
     const alerts = [
@@ -18,32 +20,97 @@ const Dashboard = () => {
         { id: 2, type: 'Upcoming', title: 'Insurance Renewal', vehicle: '2023 Tesla Model 3', days: 15 }
     ];
 
-    const activities = [
-        { id: 1, type: 'Fuel', title: 'Latest Fuel-up', vehicle: 'Tesla Model 3', details: '48 kWh at $18.50' },
-        { id: 2, type: 'Service', title: 'Recent Service', vehicle: 'Porsche Macan', details: 'Brake Fluid Flush' },
-        { id: 3, type: 'Fuel', title: 'Latest Fuel-up', vehicle: 'Porsche Macan', details: '15.2 gal at $65.10' }
-    ];
+    const [activities, setActivities] = useState([]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
-                fetchVehicles();
+                fetchData();
             } else {
                 setVehicles([]);
+                setActivities([]);
                 setLoading(false);
             }
         });
         return () => unsubscribe();
     }, []);
 
-    const fetchVehicles = async () => {
+    // Calculate current odometer based on manual setting + fuel logs after that timestamp
+    const calculateCurrentOdometer = (vehicle, logs) => {
+        const manualOdometer = vehicle.odometer || 0;
+        const manualUpdateTime = vehicle.odometerUpdatedAt ? new Date(vehicle.odometerUpdatedAt) : new Date(0);
+
+        // Filter logs to only those AFTER the manual update
+        const logsAfterManualUpdate = logs.filter(log => {
+            const logDate = new Date(log.date);
+            return logDate > manualUpdateTime && log.odometer;
+        });
+
+        // If no logs after manual update, return manual odometer
+        if (logsAfterManualUpdate.length === 0) {
+            return manualOdometer;
+        }
+
+        // Find the highest odometer value from logs after manual update
+        const maxLogOdometer = Math.max(...logsAfterManualUpdate.map(log => parseFloat(log.odometer) || 0));
+
+        // Return the greater of manual odometer or max log odometer
+        return Math.max(manualOdometer, maxLogOdometer);
+    };
+
+    const fetchData = async () => {
         try {
             setLoading(true);
-            const data = await vehicleService.getVehicles();
-            setVehicles(data);
+            const vehiclesData = await vehicleService.getVehicles();
+
+            // Fetch efficiency and logs for each vehicle
+            let allLogs = [];
+            const vehiclesWithStats = await Promise.all(vehiclesData.map(async (vehicle) => {
+                try {
+                    const logs = await vehicleService.getFuelLogs(vehicle.id);
+
+                    // Add vehicle info to logs for the activity feed
+                    const logsWithVehicle = logs.map(log => ({
+                        ...log,
+                        vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+                        vehicleId: vehicle.id
+                    }));
+                    allLogs = [...allLogs, ...logsWithVehicle];
+
+                    const efficiency = vehicleService.calculateEfficiency(logs);
+                    const currentOdometer = calculateCurrentOdometer(vehicle, logs);
+
+                    return {
+                        ...vehicle,
+                        currentOdometer,
+                        averageConsumption: efficiency ? `${efficiency} ${vehicle.fuelType === 'Electric' ? 'mi/kWh' : 'MPG'}` : 'N/A'
+                    };
+                } catch (err) {
+                    console.error(`Failed to fetch logs for vehicle ${vehicle.id}`, err);
+                    return vehicle;
+                }
+            }));
+
+            setVehicles(vehiclesWithStats);
+
+            // Process logs for activity feed
+            const recentActivities = allLogs
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 10)
+                .map(log => ({
+                    id: log.id,
+                    type: 'Fuel',
+                    title: 'Fuel-up',
+                    vehicle: log.vehicleName,
+                    details: `${log.amount} ${log.fuelType === 'Electric' ? 'kWh' : 'gal'} at $${log.pricePerUnit}/${log.fuelType === 'Electric' ? 'kWh' : 'gal'}`,
+                    date: log.date
+                }));
+
+            setActivities(recentActivities);
+
         } catch (error) {
-            console.error("Failed to fetch vehicles", error);
+            console.error("Failed to fetch data", error);
         } finally {
             setLoading(false);
         }
@@ -53,12 +120,15 @@ const Dashboard = () => {
         <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">My Garage</h1>
+                    <h1 className="text-3xl font-bold text-text-primary mb-2">My Garage</h1>
                     <p className="text-slate-400">An overview of all your vehicles and recent activity.</p>
                 </div>
                 <div className="flex gap-3">
 
-                    <button className="btn btn-outline flex items-center gap-2 text-white border-slate-600 hover:bg-slate-800">
+                    <button
+                        onClick={() => setIsFuelModalOpen(true)}
+                        className="btn btn-outline flex items-center gap-2 text-text-primary border-border hover:bg-secondary"
+                    >
                         <Fuel size={20} />
                         Add Fuel Log
                     </button>
@@ -70,7 +140,7 @@ const Dashboard = () => {
                     <input
                         type="text"
                         placeholder="Find a vehicle by name or model..."
-                        className="w-full md:w-96 bg-slate-800/50 border border-slate-700 text-white px-4 py-3 pl-10 rounded-lg focus:outline-none focus:border-blue-500 placeholder-slate-500"
+                        className="w-full md:w-96 bg-secondary/50 border border-border text-text-primary px-4 py-3 pl-10 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
                     />
                     <div className="absolute left-3 top-3.5 text-slate-500">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -89,12 +159,12 @@ const Dashboard = () => {
                             <VehicleCard key={vehicle.id} vehicle={vehicle} />
                         ))
                     ) : (
-                        <div className="col-span-full border-2 border-dashed border-slate-800 rounded-xl p-12 flex flex-col items-center justify-center text-center">
-                            <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center text-slate-600 mb-4">
+                        <div className="col-span-full border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center text-center">
+                            <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center text-text-secondary mb-4">
                                 <Plus size={32} />
                             </div>
-                            <h3 className="text-white font-bold text-lg mb-2">No vehicles found</h3>
-                            <p className="text-slate-500 max-w-sm">
+                            <h3 className="text-text-primary font-bold text-lg mb-2">No vehicles found</h3>
+                            <p className="text-text-secondary max-w-sm">
                                 {user
                                     ? "You haven't added any vehicles yet. Go to 'Manage Vehicles' to add your first car."
                                     : "Please log in to view your garage."
@@ -109,6 +179,12 @@ const Dashboard = () => {
                     <ActivitySection activities={activities} />
                 </div>
             </div>
+
+            <FuelLogModal
+                isOpen={isFuelModalOpen}
+                onClose={() => setIsFuelModalOpen(false)}
+                onSave={fetchData}
+            />
         </div>
     );
 };
