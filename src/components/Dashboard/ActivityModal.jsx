@@ -309,7 +309,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                                 placeholder="0.00"
                                                 min="0"
                                                 step="0.001"
-                                                className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                                className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
                                             />
                                         </div>
                                     </div>
@@ -327,7 +327,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                                 placeholder="0.00"
                                                 min="0"
                                                 step="0.01"
-                                                className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                                className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
                                             />
                                         </div>
                                     </div>
@@ -382,7 +382,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                             placeholder="0.00"
                                             min="0"
                                             step="0.01"
-                                            className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                            className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
                                         />
                                     </div>
                                 </div>
