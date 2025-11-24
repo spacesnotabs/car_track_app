@@ -449,7 +449,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                         className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none resize-none transition-all"
                                     />
                                 </div>
-                            </div>
+                            </>
                         )}
 
                     </form>
