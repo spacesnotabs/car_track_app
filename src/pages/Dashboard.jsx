@@ -132,7 +132,7 @@ const Dashboard = () => {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary mb-2">My Garage</h1>
                     <p className="text-text-secondary">An overview of all your vehicles and recent activity.</p>
