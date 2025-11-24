@@ -34,9 +34,22 @@ const Analytics = () => {
             if (!selectedVehicleId) return;
 
             try {
-                const fetchedLogs = await vehicleService.getFuelLogs(selectedVehicleId);
+                // Pull activity history and only keep Fuel entries so legacy fuelLogs calls still work
+                const fetchedActivities = await vehicleService.getActivities(selectedVehicleId);
+                const fuelLogs = fetchedActivities.filter((activity) => (activity.type || 'Fuel') === 'Fuel');
+
+                // Normalize/guard required fields for the chart + downstream calculations
+                const normalizedLogs = fuelLogs
+                    .map((log) => ({
+                        ...log,
+                        date: log.date || log.createdAt || null,
+                        amount: Number.isFinite(Number(log.amount)) ? Number(log.amount) : null,
+                        odometer: Number.isFinite(Number(log.odometer)) ? Number(log.odometer) : null
+                    }))
+                    .filter((log) => log.date);
+
                 // Sort logs by date ascending for the chart
-                const sortedLogs = fetchedLogs.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const sortedLogs = normalizedLogs.sort((a, b) => new Date(a.date) - new Date(b.date));
                 setLogs(sortedLogs);
             } catch (error) {
                 console.error("Error fetching logs:", error);
@@ -117,7 +130,7 @@ const Analytics = () => {
                             ))}
                             {vehicles.length === 0 && <option>No vehicles found</option>}
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
                             <Car size={16} />
                         </div>
                     </div>
@@ -134,7 +147,7 @@ const Analytics = () => {
                             <option value="6months">Last 6 Months</option>
                             <option value="3months">Last 3 Months</option>
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
                             <Calendar size={16} />
                         </div>
                     </div>
@@ -146,7 +159,7 @@ const Analytics = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-card p-4 rounded-lg border border-border">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
+                            <div className="p-2 rounded-lg bg-accent-soft text-accent">
                                 <TrendingUp size={20} />
                             </div>
                             <span className="text-text-secondary">Avg Efficiency</span>
@@ -157,7 +170,7 @@ const Analytics = () => {
                     </div>
                     <div className="bg-card p-4 rounded-lg border border-border">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-green-500/20 rounded-lg text-green-400">
+                            <div className="p-2 rounded-lg bg-success-soft text-success">
                                 <MapPin size={20} />
                             </div>
                             <span className="text-text-secondary">Distance Tracked</span>
@@ -166,7 +179,7 @@ const Analytics = () => {
                     </div>
                     <div className="bg-card p-4 rounded-lg border border-border">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
+                            <div className="p-2 rounded-lg bg-warning-soft text-warning">
                                 <Droplets size={20} />
                             </div>
                             <span className="text-text-secondary">Fuel Consumed</span>

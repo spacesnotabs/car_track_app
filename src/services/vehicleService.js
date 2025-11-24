@@ -98,14 +98,19 @@ export const vehicleService = {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
+            const odometerValue = Number.isFinite(activityData.odometer) ? activityData.odometer : null;
+            const activityDateIso = new Date(activityData.date).toISOString();
+
             const activitiesRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'activities');
             const docRef = await addDoc(activitiesRef, {
                 ...activityData,
+                odometer: odometerValue,
+                date: activityDateIso,
                 createdAt: new Date().toISOString()
             });
 
             // Update vehicle odometer if the new log has a higher value AND is newer than the last manual update
-            if (activityData.odometer) {
+            if (Number.isFinite(odometerValue)) {
                 const vehicleRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
 
                 try {
@@ -113,13 +118,13 @@ export const vehicleService = {
                     if (vehicleSnap.exists()) {
                         const vehicleData = vehicleSnap.data();
                         const lastManualUpdate = vehicleData.odometerUpdatedAt ? new Date(vehicleData.odometerUpdatedAt) : new Date(0);
-                        const activityDate = new Date(activityData.date);
+                        const activityDate = new Date(activityDateIso);
 
                         // Only update if the log is newer than the last manual update AND the value is higher
                         const currentOdometer = vehicleData.odometer || 0;
-                        if (activityDate > lastManualUpdate && activityData.odometer > currentOdometer) {
+                        if (activityDate > lastManualUpdate && odometerValue > currentOdometer) {
                             await updateDoc(vehicleRef, {
-                                odometer: activityData.odometer
+                                odometer: odometerValue
                             });
                         }
                     }
@@ -163,11 +168,13 @@ export const vehicleService = {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
+            const sanitizedOdometer = Number.isFinite(activityData.odometer) ? activityData.odometer : null;
             const activityRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'activities', activityId);
             await updateDoc(activityRef, {
                 ...activityData,
                 // Ensure date is ISO string if it was updated
-                date: new Date(activityData.date).toISOString()
+                date: new Date(activityData.date).toISOString(),
+                odometer: sanitizedOdometer
             });
             return true;
         } catch (error) {

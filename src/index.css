@@ -118,3 +118,22 @@ label {
   margin-bottom: 0.25rem;
   display: block;
 }
+
+/* Theme helpers */
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-success { color: var(--success); }
+.bg-danger { background-color: var(--danger); }
+.bg-warning { background-color: var(--warning); }
+.bg-success { background-color: var(--success); }
+.bg-accent-soft { background-color: color-mix(in srgb, var(--accent-primary) 15%, transparent); }
+.bg-danger-soft { background-color: color-mix(in srgb, var(--danger) 15%, transparent); }
+.bg-warning-soft { background-color: color-mix(in srgb, var(--warning) 15%, transparent); }
+.bg-success-soft { background-color: color-mix(in srgb, var(--success) 15%, transparent); }
+.btn-danger {
+  background-color: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover {
+  background-color: color-mix(in srgb, var(--danger) 88%, black 12%);
+}

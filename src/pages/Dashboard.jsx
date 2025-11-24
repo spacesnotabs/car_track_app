@@ -83,6 +83,7 @@ const Dashboard = () => {
 
                     return {
                         ...vehicle,
+                        name: [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || 'Unknown Vehicle',
                         currentOdometer,
                         averageConsumption: efficiency ? `${efficiency} ${vehicle.fuelType === 'Electric' ? 'mi/kWh' : 'MPG'}` : 'N/A'
                     };
@@ -131,10 +132,10 @@ const Dashboard = () => {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary mb-2">My Garage</h1>
-                    <p className="text-slate-400">An overview of all your vehicles and recent activity.</p>
+                    <p className="text-text-secondary">An overview of all your vehicles and recent activity.</p>
                 </div>
                 <div className="flex gap-3">
                     <button
@@ -154,7 +155,7 @@ const Dashboard = () => {
                         placeholder="Find a vehicle by name or model..."
                         className="w-full md:w-96 bg-secondary/50 border border-border text-text-primary px-4 py-3 pl-10 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
                     />
-                    <div className="absolute left-3 top-3.5 text-slate-500">
+                    <div className="absolute left-3 top-3.5 text-text-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     </div>
                 </div>
@@ -164,7 +165,7 @@ const Dashboard = () => {
                 <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {loading ? (
                         <div className="col-span-full flex justify-center py-12">
-                            <Loader2 className="animate-spin text-blue-500" size={32} />
+                            <Loader2 className="animate-spin text-accent" size={32} />
                         </div>
                     ) : vehicles.length > 0 ? (
                         vehicles.map(vehicle => (
