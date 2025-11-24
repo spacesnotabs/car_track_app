@@ -184,7 +184,13 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
 
                 const finalTypes = serviceData.selectedServices.filter(t => t !== 'Other');
                 if (serviceData.selectedServices.includes('Other') && serviceData.customServiceType) {
-                    finalTypes.push(serviceData.customServiceType);
+                    const customServices = serviceData.customServiceType
+                        .split(',')
+                        .map(s => s.trim())
+                        .filter(s => s);
+                    if (customServices.length > 0) {
+                        finalTypes.push(...customServices);
+                    }
                 }
 
                 activityPayload = {
