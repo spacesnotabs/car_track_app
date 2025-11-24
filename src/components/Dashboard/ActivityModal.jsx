@@ -26,7 +26,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
 
     // Service specific
     const [serviceData, setServiceData] = useState({
-        serviceType: 'Oil Change',
+        selectedServices: ['Oil Change'],
         customServiceType: ''
     });
 
@@ -75,10 +75,19 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                     pricePerUnit: initialData.pricePerUnit || ''
                 });
             } else if (initialData.type === 'Service') {
-                const isCustom = !SERVICE_TYPES.includes(initialData.serviceType) && initialData.serviceType !== 'Other';
+                const savedTypes = initialData.serviceTypes || (initialData.serviceType ? initialData.serviceType.split(',').map(s => s.trim()) : []);
+                const predefined = SERVICE_TYPES.filter(t => t !== 'Other');
+                const standardSelected = savedTypes.filter(t => predefined.includes(t));
+                const customTypes = savedTypes.filter(t => !predefined.includes(t));
+
+                const selected = [...standardSelected];
+                if (customTypes.length > 0) {
+                    selected.push('Other');
+                }
+
                 setServiceData({
-                    serviceType: isCustom ? 'Other' : (initialData.serviceType || 'Oil Change'),
-                    customServiceType: isCustom ? initialData.serviceType : ''
+                    selectedServices: selected.length > 0 ? selected : ['Oil Change'],
+                    customServiceType: customTypes.join(', ')
                 });
             }
         } else {
@@ -92,7 +101,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                 notes: ''
             });
             setFuelData({ amount: '', pricePerUnit: '' });
-            setServiceData({ serviceType: 'Oil Change', customServiceType: '' });
+            setServiceData({ selectedServices: ['Oil Change'], customServiceType: '' });
         }
     };
 
@@ -129,9 +138,19 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
         });
     };
 
-    const handleServiceChange = (e) => {
-        const { name, value } = e.target;
-        setServiceData(prev => ({ ...prev, [name]: value }));
+    const handleServiceToggle = (type) => {
+        setServiceData(prev => {
+            const current = prev.selectedServices;
+            if (current.includes(type)) {
+                return { ...prev, selectedServices: current.filter(t => t !== type) };
+            } else {
+                return { ...prev, selectedServices: [...current, type] };
+            }
+        });
+    };
+
+    const handleCustomServiceChange = (e) => {
+        setServiceData(prev => ({ ...prev, customServiceType: e.target.value }));
     };
 
     const handleSubmit = async (e) => {
@@ -160,9 +179,28 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                     fuelType: selectedVehicle && selectedVehicle.fuelType ? selectedVehicle.fuelType : 'Gas'
                 };
             } else if (type === 'Service') {
+                if (serviceData.selectedServices.length === 0) {
+                    alert("Please select at least one service type.");
+                    setLoading(false);
+                    return;
+                }
+
+                const finalTypes = serviceData.selectedServices.filter(t => t !== 'Other');
+                if (serviceData.selectedServices.includes('Other') && serviceData.customServiceType) {
+                    const customServices = serviceData.customServiceType
+                        .split(',')
+                        .map(s => s.trim())
+                        .filter(s => s);
+                    if (customServices.length > 0) {
+                        finalTypes.push(...customServices);
+                    }
+                }
+
                 activityPayload = {
                     ...activityPayload,
-                    serviceType: serviceData.serviceType === 'Other' ? serviceData.customServiceType : serviceData.serviceType
+                    serviceTypes: finalTypes,
+                    // Backward compatibility: store a string representation
+                    serviceType: finalTypes.join(', ')
                 };
             }
 
@@ -344,45 +382,38 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                         )}
 
                         {type === 'Service' && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                                {/* Service Type */}
+                            <>
+                                {/* Service Types */}
                                 <div>
-                                    <label className="block text-sm font-medium text-text-secondary mb-2">Service Type *</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                        {SERVICE_TYPES.map((service) => {
-                                            const isSelected = serviceData.serviceType === service;
-                                            return (
-                                                <button
-                                                    key={service}
-                                                    type="button"
-                                                    onClick={() => setServiceData(prev => ({
-                                                        ...prev,
-                                                        serviceType: service,
-                                                        customServiceType: service === 'Other' ? prev.customServiceType : ''
-                                                    }))}
-                                                    className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${isSelected
-                                                        ? 'border-accent bg-accent/10 text-accent shadow-sm ring-1 ring-accent/20'
-                                                        : 'border-border bg-primary text-text-secondary hover:border-accent/50 hover:text-text-primary hover:bg-secondary'
-                                                        }`}
-                                                    aria-pressed={isSelected}
-                                                >
-                                                    {service}
-                                                </button>
-                                            );
-                                        })}
+                                    <label className="block text-sm font-medium text-text-secondary mb-2">Service Types *</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {SERVICE_TYPES.map(t => (
+                                            <label key={t} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50 border border-border hover:border-accent/50 cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={serviceData.selectedServices.includes(t)}
+                                                    onChange={() => handleServiceToggle(t)}
+                                                    className="rounded border-border bg-secondary text-accent focus:ring-accent"
+                                                />
+                                                <span className="text-text-primary text-sm">{t}</span>
+                                            </label>
+                                        ))}
                                     </div>
+                                    {serviceData.selectedServices.length === 0 && (
+                                        <p className="text-xs text-danger mt-1">Please select at least one service type.</p>
+                                    )}
                                 </div>
 
                                 {/* Custom Service Type */}
-                                {serviceData.serviceType === 'Other' && (
-                                    <div className="animate-in fade-in slide-in-from-top-1">
+                                {serviceData.selectedServices.includes('Other') && (
+                                    <div>
                                         <label className="block text-sm font-medium text-text-secondary mb-1">Specify Service *</label>
                                         <input
                                             type="text"
                                             name="customServiceType"
                                             value={serviceData.customServiceType}
-                                            onChange={handleServiceChange}
-                                            placeholder="e.g. Transmission Fluid Change"
+                                            onChange={handleCustomServiceChange}
+                                            placeholder="e.g. Transmission Flush, Differential Service"
                                             required
                                             className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                         />

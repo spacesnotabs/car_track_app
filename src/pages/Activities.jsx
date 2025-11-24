@@ -39,7 +39,7 @@ const Activities = () => {
                         vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
                         vehicleId: vehicle.id,
                         // Create a searchable string
-                        searchString: `${vehicle.year} ${vehicle.make} ${vehicle.model} ${log.type || 'Fuel'} ${log.serviceType || ''}`.toLowerCase()
+                        searchString: `${vehicle.year} ${vehicle.make} ${vehicle.model} ${log.type || 'Fuel'} ${log.serviceType || ''} ${log.serviceTypes ? log.serviceTypes.join(' ') : ''}`.toLowerCase()
                     }));
                     allLogs = [...allLogs, ...logsWithVehicle];
                 } catch (err) {
@@ -356,7 +356,7 @@ const Activities = () => {
                                             {activity.type === 'Service' && (
                                                 <div>
                                                     <span className="font-medium text-text-primary">
-                                                        {activity.serviceType}
+                                                        {activity.serviceTypes ? activity.serviceTypes.join(', ') : activity.serviceType}
                                                     </span>
                                                     {activity.notes && (
                                                         <div className="text-text-secondary text-sm mt-1 line-clamp-1">

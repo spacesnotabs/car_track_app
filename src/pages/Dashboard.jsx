@@ -107,7 +107,7 @@ const Dashboard = () => {
                         title = 'Fuel-up';
                         details = `${log.amount} ${log.fuelType === 'Electric' ? 'kWh' : 'gal'} at $${log.pricePerUnit || '-'}/${log.fuelType === 'Electric' ? 'kWh' : 'gal'}`;
                     } else {
-                        title = log.serviceType || 'Service';
+                        title = log.serviceTypes ? log.serviceTypes.join(', ') : (log.serviceType || 'Service');
                         details = log.totalCost ? `$${log.totalCost.toFixed(2)}` : (log.notes || 'No details');
                     }
 
