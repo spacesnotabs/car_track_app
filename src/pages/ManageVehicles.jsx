@@ -16,6 +16,8 @@ const ManageVehicles = () => {
         year: '',
         vin: ''
     });
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
 
     const [editingVehicle, setEditingVehicle] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -33,6 +35,14 @@ const ManageVehicles = () => {
         });
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        return () => {
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
 
     const fetchVehicles = async () => {
         try {
@@ -64,9 +74,11 @@ const ManageVehicles = () => {
         }
 
         try {
-            const newVehicle = await vehicleService.addVehicle(formData);
+            const newVehicle = await vehicleService.addVehicle({ ...formData, imageFile });
             setVehicles([...vehicles, newVehicle]);
             setFormData({ make: '', model: '', year: '', vin: '' });
+            setImageFile(null);
+            setImagePreview(null);
         } catch (error) {
             console.error("Error adding vehicle", error);
             alert("Failed to add vehicle. Please try again.");
@@ -75,6 +87,8 @@ const ManageVehicles = () => {
 
     const handleClear = () => {
         setFormData({ make: '', model: '', year: '', vin: '' });
+        setImageFile(null);
+        setImagePreview(null);
     };
 
     const handleDelete = async (id) => {
@@ -154,6 +168,36 @@ const ManageVehicles = () => {
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1.5">Vehicle Photo</label>
+                                <div className="flex items-start gap-3">
+                                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-secondary border border-border flex items-center justify-center text-text-secondary">
+                                        {imagePreview ? (
+                                            <img src={imagePreview} alt="Vehicle preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Car size={24} />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                setImageFile(file);
+                                                setImagePreview(URL.createObjectURL(file));
+                                            }}
+                                            className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-md file:border file:border-border file:bg-secondary file:text-text-primary file:cursor-pointer"
+                                        />
+                                        <p className="text-xs text-text-secondary">
+                                            Use your camera on mobile or pick a JPG, PNG, WEBP, HEIC/HEIF, or GIF from your files.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="submit"
@@ -187,8 +231,12 @@ const ManageVehicles = () => {
                             {vehicles.map(vehicle => (
                                 <div key={vehicle.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between group hover:border-border transition-colors">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center text-accent">
-                                            <Car size={24} />
+                                        <div className="w-16 h-16 bg-secondary rounded-lg overflow-hidden border border-border flex items-center justify-center text-accent">
+                                            {vehicle.image ? (
+                                                <img src={vehicle.image} alt={`${vehicle.year} ${vehicle.make}`} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Car size={24} />
+                                            )}
                                         </div>
                                         <div>
                                             <h3 className="text-text-primary font-bold">{vehicle.year} {vehicle.make} {vehicle.model}</h3>

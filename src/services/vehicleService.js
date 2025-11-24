@@ -1,6 +1,48 @@
-import { db, auth } from './firebase';
+import { db, auth, storage } from './firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { aggregateEfficiencyWindow, DEFAULT_EFFICIENCY_WINDOW } from '../utils/fuelCalculations';
+
+const ACCEPTED_IMAGE_TYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/heic',
+    'image/heif'
+];
+
+const sanitizeFileName = (name) => {
+    if (!name) return 'vehicle';
+    return name.replace(/[^\w.-]/g, '_');
+};
+
+const uploadVehicleImage = async (file, userId, vehicleId = 'vehicle') => {
+    if (!file) return null;
+
+    if (file.type && !ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        throw new Error('Unsupported image type. Please upload a JPG, PNG, WEBP, HEIC/HEIF, or GIF file.');
+    }
+
+    const safeName = sanitizeFileName(file.name || 'vehicle');
+    const path = `users/${userId}/vehicles/${vehicleId}_${Date.now()}_${safeName}`;
+    const storageRef = ref(storage, path);
+    const metadata = file.type ? { contentType: file.type } : undefined;
+    const snapshot = await uploadBytes(storageRef, file, metadata);
+    const url = await getDownloadURL(snapshot.ref);
+
+    return { url, path };
+};
+
+const deleteVehicleImage = async (path) => {
+    if (!path) return;
+    try {
+        await deleteObject(ref(storage, path));
+    } catch (error) {
+        // Do not block the user if cleanup fails; log for debugging.
+        console.warn('Failed to delete old vehicle image', error);
+    }
+};
 
 export const vehicleService = {
     // Add a new vehicle
@@ -9,12 +51,16 @@ export const vehicleService = {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
+            const { imageFile, ...vehicleFields } = vehicleData;
+            const uploadedImage = imageFile ? await uploadVehicleImage(imageFile, user.uid) : null;
+
             // Add default values for fields not yet collected
             const vehicleWithDefaults = {
-                ...vehicleData,
+                ...vehicleFields,
                 createdAt: new Date().toISOString(),
                 // Default values for dashboard display
-                image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800', // Generic car image
+                image: uploadedImage?.url || vehicleFields.image || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800', // Generic car image
+                imagePath: uploadedImage?.path || vehicleFields.imagePath || null,
                 status: 'On Track',
                 odometer: 0,
                 averageConsumption: 'N/A',
@@ -76,14 +122,33 @@ export const vehicleService = {
             const user = auth.currentUser;
             if (!user) throw new Error('User not authenticated');
 
-            // If odometer is being updated, set the timestamp
-            const finalUpdates = { ...updates };
-            if (updates.odometer !== undefined) {
-                finalUpdates.odometerUpdatedAt = new Date().toISOString();
+            const { imageFile, ...updateFields } = updates;
+
+            // If odometer is being updated, normalize it and set the timestamp
+            const finalUpdates = { ...updateFields };
+            if (updateFields.odometer !== undefined) {
+                if (Number.isFinite(updateFields.odometer)) {
+                    finalUpdates.odometerUpdatedAt = new Date().toISOString();
+                } else {
+                    delete finalUpdates.odometer;
+                }
             }
 
             // Update in user's subcollection
             const vehicleRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
+
+            if (imageFile) {
+                const existingSnap = await getDoc(vehicleRef);
+                const existingPath = existingSnap.exists() ? existingSnap.data().imagePath : null;
+                const uploadedImage = await uploadVehicleImage(imageFile, user.uid, vehicleId);
+                finalUpdates.image = uploadedImage.url;
+                finalUpdates.imagePath = uploadedImage.path;
+
+                if (existingPath && existingPath !== uploadedImage.path) {
+                    await deleteVehicleImage(existingPath);
+                }
+            }
+
             await updateDoc(vehicleRef, finalUpdates);
             return true;
         } catch (error) {

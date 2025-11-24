@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Save } from 'lucide-react';
+import { X, Loader2, Save, Car } from 'lucide-react';
 import { vehicleService } from '../../services/vehicleService';
 
 const EditVehicleModal = ({ isOpen, onClose, vehicle, onSave }) => {
@@ -11,6 +11,8 @@ const EditVehicleModal = ({ isOpen, onClose, vehicle, onSave }) => {
         vin: '',
         odometer: ''
     });
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
 
     useEffect(() => {
         if (vehicle) {
@@ -21,8 +23,18 @@ const EditVehicleModal = ({ isOpen, onClose, vehicle, onSave }) => {
                 vin: vehicle.vin || '',
                 odometer: vehicle.odometer || 0
             });
+            setImagePreview(vehicle.image || '');
+            setImageFile(null);
         }
     }, [vehicle]);
+
+    useEffect(() => {
+        return () => {
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -41,7 +53,8 @@ const EditVehicleModal = ({ isOpen, onClose, vehicle, onSave }) => {
                 model: formData.model,
                 year: parseInt(formData.year),
                 vin: formData.vin,
-                odometer: parseFloat(formData.odometer)
+                odometer: parseFloat(formData.odometer),
+                imageFile
             };
 
             await vehicleService.updateVehicle(vehicle.id, updates);
@@ -119,12 +132,40 @@ const EditVehicleModal = ({ isOpen, onClose, vehicle, onSave }) => {
                             <input
                                 type="text"
                                 name="vin"
+                                value={formData.vin}
                                 onChange={handleChange}
-                                required
-                                min="0"
-                                step="0.1"
                                 className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Vehicle Photo</label>
+                            <div className="flex items-start gap-3">
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-secondary border border-border flex items-center justify-center text-text-secondary">
+                                    {imagePreview ? (
+                                        <img src={imagePreview} alt="Vehicle preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Car size={20} />
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            setImageFile(file);
+                                            setImagePreview(URL.createObjectURL(file));
+                                        }}
+                                        className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-md file:border file:border-border file:bg-secondary file:text-text-primary file:cursor-pointer"
+                                    />
+                                    <p className="text-xs text-text-secondary">
+                                        Use your camera on mobile or pick a JPG, PNG, WEBP, HEIC/HEIF, or GIF.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                     </form>
