@@ -83,6 +83,7 @@ const Dashboard = () => {
 
                     return {
                         ...vehicle,
+                        name: [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || 'Unknown Vehicle',
                         currentOdometer,
                         averageConsumption: efficiency ? `${efficiency} ${vehicle.fuelType === 'Electric' ? 'mi/kWh' : 'MPG'}` : 'N/A'
                     };
@@ -106,7 +107,7 @@ const Dashboard = () => {
                         title = 'Fuel-up';
                         details = `${log.amount} ${log.fuelType === 'Electric' ? 'kWh' : 'gal'} at $${log.pricePerUnit || '-'}/${log.fuelType === 'Electric' ? 'kWh' : 'gal'}`;
                     } else {
-                        title = log.serviceType || 'Service';
+                        title = log.serviceTypes ? log.serviceTypes.join(', ') : (log.serviceType || 'Service');
                         details = log.totalCost ? `$${log.totalCost.toFixed(2)}` : (log.notes || 'No details');
                     }
 
@@ -131,7 +132,7 @@ const Dashboard = () => {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary mb-2">My Garage</h1>
                     <p className="text-text-secondary">An overview of all your vehicles and recent activity.</p>
