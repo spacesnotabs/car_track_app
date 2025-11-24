@@ -75,7 +75,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                     pricePerUnit: initialData.pricePerUnit || ''
                 });
             } else if (initialData.type === 'Service') {
-                const savedTypes = initialData.serviceTypes || (initialData.serviceType ? [initialData.serviceType] : []);
+                const savedTypes = initialData.serviceTypes || (initialData.serviceType ? initialData.serviceType.split(',').map(s => s.trim()) : []);
                 const predefined = SERVICE_TYPES.filter(t => t !== 'Other');
                 const standardSelected = savedTypes.filter(t => predefined.includes(t));
                 const customTypes = savedTypes.filter(t => !predefined.includes(t));
