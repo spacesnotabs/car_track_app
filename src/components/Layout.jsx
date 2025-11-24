@@ -26,7 +26,7 @@ const Layout = ({ children, user }) => {
     const closeNav = () => setIsNavOpen(false);
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-primary text-text-primary">
             <header className="sticky top-0 z-40 bg-secondary/95 backdrop-blur border-b border-border shadow-[0_4px_30px_rgba(15,23,42,0.35)]">
                 <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4 md:py-6">
                     <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-text-primary">
@@ -144,8 +144,10 @@ const Layout = ({ children, user }) => {
                 )}
             </header>
 
-            <main className="flex-1 container py-6 sm:py-8">
-                {children}
+            <main className="flex-1 bg-primary">
+                <div className="container py-6 sm:py-8">
+                    {children}
+                </div>
             </main>
         </div>
     );

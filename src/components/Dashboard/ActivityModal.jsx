@@ -64,7 +64,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
             setFormData({
                 vehicleId: initialData.vehicleId || '',
                 date: initialData.date ? new Date(initialData.date).toISOString().slice(0, 16) : defaultDate,
-                odometer: initialData.odometer || '',
+                odometer: initialData.odometer ?? '',
                 totalCost: initialData.totalCost || '',
                 notes: initialData.notes || ''
             });
@@ -157,10 +157,13 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
         e.preventDefault();
         setLoading(true);
         try {
+            const odometerValue = formData.odometer === '' ? null : Number(formData.odometer);
+            const parsedOdometer = Number.isFinite(odometerValue) ? odometerValue : null;
+
             // Prepare payload
             let activityPayload = {
                 date: new Date(formData.date).toISOString(),
-                odometer: parseFloat(formData.odometer),
+                odometer: parsedOdometer,
                 totalCost: formData.totalCost ? parseFloat(formData.totalCost) : null,
                 notes: formData.notes,
                 type: type
@@ -220,51 +223,59 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose}></div>
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+        >
+            <div
+                className="absolute inset-0 z-10"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'none' }}
+                onClick={onClose}
+            />
 
-            <div className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div
+                className="relative z-20 w-full max-w-lg bg-card border border-border border-t-[6px] border-t-accent rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+                style={{ backgroundColor: 'var(--bg-card)', backdropFilter: 'none', opacity: 1 }}
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center justify-between p-4 border-b border-border bg-card">
                     <h2 className="text-xl font-bold text-text-primary">
                         {initialData ? `Edit ${type} Log` : 'Add Activity'}
                     </h2>
-                    <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
+                    <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors p-1 hover:bg-secondary rounded-full">
                         <X size={24} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-                    <form id="activity-form" onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-card">
+                    <form id="activity-form" onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* Type Selection (only for new entries or if we allow switching types on edit, but usually sticking to existing type is better. Let's allow switching for now if not editing?) */}
-                        {/* Actually, user might want to change type if they made a mistake. */}
+                        {/* Activity Type Segmented Control */}
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Activity Type</label>
-                            <div className="flex gap-4">
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="type"
-                                        value="Fuel"
-                                        checked={type === 'Fuel'}
-                                        onChange={(e) => setType(e.target.value)}
-                                        className="mr-2 accent-accent"
-                                    />
+                            <label className="block text-sm font-medium text-text-secondary mb-2">Activity Type</label>
+                            <div className="flex p-1 bg-primary rounded-lg border border-border">
+                                <button
+                                    type="button"
+                                    onClick={() => setType('Fuel')}
+                                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${type === 'Fuel'
+                                        ? 'bg-card text-accent shadow-sm border border-border/50'
+                                        : 'text-text-secondary hover:text-text-primary'
+                                        }`}
+                                >
                                     Fuel Log
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="type"
-                                        value="Service"
-                                        checked={type === 'Service'}
-                                        onChange={(e) => setType(e.target.value)}
-                                        className="mr-2 accent-accent"
-                                    />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setType('Service')}
+                                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${type === 'Service'
+                                        ? 'bg-card text-accent shadow-sm border border-border/50'
+                                        : 'text-text-secondary hover:text-text-primary'
+                                        }`}
+                                >
                                     Service
-                                </label>
+                                </button>
                             </div>
                         </div>
 
@@ -276,7 +287,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                 value={formData.vehicleId}
                                 onChange={handleCommonChange}
                                 required
-                                className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                             >
                                 <option value="">Select a vehicle</option>
                                 {vehicles.map(v => (
@@ -294,29 +305,28 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                 value={formData.date}
                                 onChange={handleCommonChange}
                                 required
-                                className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                             />
                         </div>
 
                         {/* Odometer */}
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Odometer (mi) *</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Odometer (mi) (Optional)</label>
                             <input
                                 type="number"
                                 name="odometer"
                                 value={formData.odometer}
                                 onChange={handleCommonChange}
                                 placeholder="e.g. 45000"
-                                required
                                 min="0"
                                 step="0.1"
-                                className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                             />
                         </div>
 
                         {/* Conditional Fields based on Type */}
                         {type === 'Fuel' && (
-                            <>
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                                 {/* Amount */}
                                 <div>
                                     <label className="block text-sm font-medium text-text-secondary mb-1">Amount (Gallons/kWh) *</label>
@@ -329,7 +339,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                         required
                                         min="0.1"
                                         step="0.001"
-                                        className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                        className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                     />
                                 </div>
 
@@ -344,10 +354,9 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                                 name="pricePerUnit"
                                                 value={fuelData.pricePerUnit}
                                                 onChange={handleFuelChange}
-                                                placeholder="0.00"
                                                 min="0"
                                                 step="0.001"
-                                                className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                             />
                                         </div>
                                     </div>
@@ -362,15 +371,14 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                                 name="totalCost"
                                                 value={formData.totalCost}
                                                 onChange={handleCommonChange}
-                                                placeholder="0.00"
                                                 min="0"
                                                 step="0.01"
-                                                className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                             />
                                         </div>
                                     </div>
                                 </div>
-                            </>
+                            </div>
                         )}
 
                         {type === 'Service' && (
@@ -407,7 +415,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                             onChange={handleCustomServiceChange}
                                             placeholder="e.g. Transmission Flush, Differential Service"
                                             required
-                                            className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                            className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                         />
                                     </div>
                                 )}
@@ -422,10 +430,9 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                             name="totalCost"
                                             value={formData.totalCost}
                                             onChange={handleCommonChange}
-                                            placeholder="0.00"
                                             min="0"
                                             step="0.01"
-                                            className="w-full bg-secondary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                                            className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                         />
                                     </div>
                                 </div>
@@ -439,21 +446,21 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                         onChange={handleCommonChange}
                                         placeholder="Add any details about the service..."
                                         rows="3"
-                                        className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none resize-none"
+                                        className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none resize-none transition-all"
                                     />
                                 </div>
-                            </>
+                            </div>
                         )}
 
                     </form>
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-border flex justify-end gap-3">
+                <div className="p-4 border-t border-border bg-card flex justify-end gap-3">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-secondary rounded-lg transition-colors"
+                        className="px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-secondary rounded-lg transition-colors font-medium"
                     >
                         Cancel
                     </button>
@@ -461,7 +468,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                         type="submit"
                         form="activity-form"
                         disabled={loading}
-                        className="px-6 py-2 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 bg-accent hover:bg-accent-hover text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:text-white"
                     >
                         {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Save Activity

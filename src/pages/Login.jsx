@@ -29,14 +29,14 @@ const Login = () => {
                 <p className="text-text-secondary mb-8">Sign in to manage your vehicle maintenance and fuel logs.</p>
 
                 {error && (
-                    <div className="bg-red-500/10 text-red-500 p-3 rounded mb-4 text-sm">
+                    <div className="bg-danger-soft text-danger border border-border p-3 rounded mb-4 text-sm">
                         {error}
                     </div>
                 )}
 
                 <button
                     onClick={handleLogin}
-                    className="w-full btn btn-primary flex items-center justify-center gap-2 py-3 bg-white hover:bg-gray-50 text-slate-900 font-bold rounded-xl transition-colors"
+                    className="w-full btn flex items-center justify-center gap-2 py-3 bg-secondary border border-border hover:border-accent hover:text-accent text-text-primary font-bold rounded-xl transition-colors"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path

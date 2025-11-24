@@ -17,7 +17,7 @@ const VehicleCard = ({ vehicle }) => {
             <div className="p-5 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-4">
                     <h3 className="text-lg font-bold text-text-primary">{vehicle.name}</h3>
-                    <div className={`flex items-center gap-1.5 text-sm font-medium ${isDue ? 'text-yellow-500' : 'text-green-500'}`}>
+                    <div className={`flex items-center gap-1.5 text-sm font-medium ${isDue ? 'text-warning' : 'text-success'}`}>
                         {isDue ? <AlertTriangle size={16} /> : <CheckCircle size={16} />}
                         <span>{vehicle.status}</span>
                     </div>
@@ -36,13 +36,13 @@ const VehicleCard = ({ vehicle }) => {
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden mb-2">
                         <div
-                            className={`h-full rounded-full ${isDue ? 'bg-yellow-500' : 'bg-blue-500'}`}
+                            className={`h-full rounded-full ${isDue ? 'bg-warning' : 'bg-accent'}`}
                             style={{ width: `${vehicle.serviceProgress}%` }}
                         />
                     </div>
                     <div className="text-xs text-text-secondary mb-4">Due in {vehicle.dueIn} miles</div>
 
-                    <button className="w-full btn btn-primary py-2.5 text-sm font-medium bg-blue-600 hover:bg-blue-500 border-none">
+                    <button className="w-full btn btn-primary py-2.5 text-sm font-medium bg-accent hover:bg-accent-hover border-none">
                         View Details
                     </button>
                 </div>

@@ -220,7 +220,7 @@ const Activities = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary mb-2">Activities</h1>
-                    <p className="text-slate-400">View and manage your vehicle history.</p>
+                    <p className="text-text-secondary">View and manage your vehicle history.</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -252,7 +252,7 @@ const Activities = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-10 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
                     />
-                    <Search className="absolute left-3 top-3 text-slate-500" size={18} />
+                    <Search className="absolute left-3 top-3 text-text-secondary" size={18} />
                 </div>
 
                 <div className="relative w-full md:w-48">
@@ -265,14 +265,14 @@ const Activities = () => {
                         <option value="Fuel">Fuel Logs</option>
                         <option value="Service">Service</option>
                     </select>
-                    <Filter className="absolute left-3 top-3 text-slate-500" size={18} />
+                    <Filter className="absolute left-3 top-3 text-text-secondary" size={18} />
                 </div>
 
                 <button
                     onClick={handleBulkDelete}
                     disabled={!selectedActivities.length || bulkDeleting}
                     className={`inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${selectedActivities.length
-                        ? 'bg-danger/90 text-white hover:bg-danger'
+                        ? 'btn-danger hover:opacity-90'
                         : 'bg-secondary text-text-secondary cursor-not-allowed'
                         }`}
                 >
@@ -285,7 +285,7 @@ const Activities = () => {
             <div className="bg-card border border-border rounded-xl overflow-hidden">
                 {loading ? (
                     <div className="flex justify-center py-12">
-                        <Loader2 className="animate-spin text-blue-500" size={32} />
+                        <Loader2 className="animate-spin text-accent" size={32} />
                     </div>
                 ) : filteredActivities.length > 0 ? (
                     <div className="overflow-x-auto">
@@ -322,7 +322,9 @@ const Activities = () => {
                                             />
                                         </td>
                                         <td className="p-4">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity.type === 'Fuel' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity.type === 'Fuel'
+                                                    ? 'bg-accent/10 text-accent'
+                                                    : 'bg-secondary text-text-secondary'
                                                 }`}>
                                                 {activity.type === 'Fuel' ? <Fuel size={16} /> : <Wrench size={16} />}
                                             </div>
@@ -382,8 +384,8 @@ const Activities = () => {
                                                 <button
                                                     onClick={() => handleDeleteClick(activity.id)}
                                                     className={`p-1.5 rounded transition-colors flex items-center gap-1 ${deletingId === activity.id
-                                                        ? 'bg-danger text-white hover:bg-danger/90 opacity-100'
-                                                        : 'text-text-secondary hover:text-danger hover:bg-danger/10'
+                                                        ? 'btn-danger opacity-100 hover:opacity-90'
+                                                        : 'text-text-secondary hover:text-danger hover:bg-danger-soft'
                                                         }`}
                                                     title="Delete"
                                                 >
