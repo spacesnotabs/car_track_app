@@ -1,0 +1,451 @@
+import React, { useState, useEffect } from 'react';
+import { X, Loader2, Save } from 'lucide-react';
+import { vehicleService } from '../../services/vehicleService';
+
+const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialData }) => {
+    const [loading, setLoading] = useState(false);
+    const [vehicles, setVehicles] = useState([]);
+
+    // Core state
+    const [type, setType] = useState('Fuel');
+
+    // Form data
+    const [formData, setFormData] = useState({
+        vehicleId: '',
+        date: '',
+        odometer: '',
+        totalCost: '',
+        notes: ''
+    });
+
+    // Fuel specific
+    const [fuelData, setFuelData] = useState({
+        amount: '',
+        pricePerUnit: ''
+    });
+
+    // Service specific
+    const [serviceData, setServiceData] = useState({
+        serviceType: 'Oil Change',
+        customServiceType: ''
+    });
+
+    const SERVICE_TYPES = [
+        'Oil Change',
+        'Tire Rotation',
+        'Inspection',
+        'Battery Replacement',
+        'Brake Service',
+        'Coolant Flush',
+        'Air Filter Replacement',
+        'Other'
+    ];
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchVehicles();
+            initializeForm();
+        }
+    }, [isOpen, preSelectedVehicleId, initialData?.id]);
+
+    const initializeForm = () => {
+        const now = new Date();
+        const defaultDate = (() => {
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        })();
+
+        if (initialData) {
+            setType(initialData.type || 'Fuel');
+            setFormData({
+                vehicleId: initialData.vehicleId || '',
+                date: initialData.date ? new Date(initialData.date).toISOString().slice(0, 16) : defaultDate,
+                odometer: initialData.odometer ?? '',
+                totalCost: initialData.totalCost || '',
+                notes: initialData.notes || ''
+            });
+
+            if (initialData.type === 'Fuel' || !initialData.type) {
+                setFuelData({
+                    amount: initialData.amount || '',
+                    pricePerUnit: initialData.pricePerUnit || ''
+                });
+            } else if (initialData.type === 'Service') {
+                const isCustom = !SERVICE_TYPES.includes(initialData.serviceType) && initialData.serviceType !== 'Other';
+                setServiceData({
+                    serviceType: isCustom ? 'Other' : (initialData.serviceType || 'Oil Change'),
+                    customServiceType: isCustom ? initialData.serviceType : ''
+                });
+            }
+        } else {
+            // New Entry
+            setType('Fuel'); // Default to Fuel
+            setFormData({
+                vehicleId: preSelectedVehicleId || '',
+                date: defaultDate,
+                odometer: '',
+                totalCost: '',
+                notes: ''
+            });
+            setFuelData({ amount: '', pricePerUnit: '' });
+            setServiceData({ serviceType: 'Oil Change', customServiceType: '' });
+        }
+    };
+
+    const fetchVehicles = async () => {
+        try {
+            const data = await vehicleService.getVehicles();
+            setVehicles(data);
+            // If only one vehicle and none selected, select it
+            if (data.length === 1 && !formData.vehicleId) {
+                setFormData(prev => ({ ...prev, vehicleId: data[0].id }));
+            }
+        } catch (error) {
+            console.error("Failed to fetch vehicles", error);
+        }
+    };
+
+    const handleCommonChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleFuelChange = (e) => {
+        const { name, value } = e.target;
+        setFuelData(prev => {
+            const newData = { ...prev, [name]: value };
+
+            // Auto-calculate total cost if price and amount are present
+            if (newData.amount && newData.pricePerUnit) {
+                const calculatedCost = (parseFloat(newData.amount) * parseFloat(newData.pricePerUnit)).toFixed(2);
+                setFormData(prevForm => ({ ...prevForm, totalCost: calculatedCost }));
+            }
+
+            return newData;
+        });
+    };
+
+    const handleServiceChange = (e) => {
+        const { name, value } = e.target;
+        setServiceData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const odometerValue = formData.odometer === '' ? null : Number(formData.odometer);
+            const parsedOdometer = Number.isFinite(odometerValue) ? odometerValue : null;
+
+            // Prepare payload
+            let activityPayload = {
+                date: new Date(formData.date).toISOString(),
+                odometer: parsedOdometer,
+                totalCost: formData.totalCost ? parseFloat(formData.totalCost) : null,
+                notes: formData.notes,
+                type: type
+            };
+
+            if (type === 'Fuel') {
+                // Look up the selected vehicle's fuelType
+                const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId);
+                activityPayload = {
+                    ...activityPayload,
+                    amount: parseFloat(fuelData.amount),
+                    pricePerUnit: fuelData.pricePerUnit ? parseFloat(fuelData.pricePerUnit) : null,
+                    fuelType: selectedVehicle && selectedVehicle.fuelType ? selectedVehicle.fuelType : 'Gas'
+                };
+            } else if (type === 'Service') {
+                activityPayload = {
+                    ...activityPayload,
+                    serviceType: serviceData.serviceType === 'Other' ? serviceData.customServiceType : serviceData.serviceType
+                };
+            }
+
+            if (initialData && initialData.id) {
+                await vehicleService.updateActivity(formData.vehicleId, initialData.id, activityPayload);
+            } else {
+                await vehicleService.addActivity(formData.vehicleId, activityPayload);
+            }
+
+            onSave();
+            onClose();
+        } catch (error) {
+            console.error("Error saving activity:", error);
+            alert("Failed to save activity. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+        >
+            <div
+                className="absolute inset-0 z-10"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'none' }}
+                onClick={onClose}
+            />
+
+            <div
+                className="relative z-20 w-full max-w-lg bg-card border border-border border-t-[6px] border-t-accent rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+                style={{ backgroundColor: 'var(--bg-card)', backdropFilter: 'none', opacity: 1 }}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+                    <h2 className="text-xl font-bold text-text-primary">
+                        {initialData ? `Edit ${type} Log` : 'Add Activity'}
+                    </h2>
+                    <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors p-1 hover:bg-secondary rounded-full">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-card">
+                    <form id="activity-form" onSubmit={handleSubmit} className="space-y-5">
+
+                        {/* Activity Type Segmented Control */}
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-2">Activity Type</label>
+                            <div className="flex p-1 bg-primary rounded-lg border border-border">
+                                <button
+                                    type="button"
+                                    onClick={() => setType('Fuel')}
+                                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${type === 'Fuel'
+                                        ? 'bg-card text-accent shadow-sm border border-border/50'
+                                        : 'text-text-secondary hover:text-text-primary'
+                                        }`}
+                                >
+                                    Fuel Log
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setType('Service')}
+                                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${type === 'Service'
+                                        ? 'bg-card text-accent shadow-sm border border-border/50'
+                                        : 'text-text-secondary hover:text-text-primary'
+                                        }`}
+                                >
+                                    Service
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Vehicle Selection */}
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Vehicle *</label>
+                            <select
+                                name="vehicleId"
+                                value={formData.vehicleId}
+                                onChange={handleCommonChange}
+                                required
+                                className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                            >
+                                <option value="">Select a vehicle</option>
+                                {vehicles.map(v => (
+                                    <option key={v.id} value={v.id}>{v.year} {v.make} {v.model}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Date */}
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Date *</label>
+                            <input
+                                type="datetime-local"
+                                name="date"
+                                value={formData.date}
+                                onChange={handleCommonChange}
+                                required
+                                className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* Odometer */}
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Odometer (mi) (Optional)</label>
+                            <input
+                                type="number"
+                                name="odometer"
+                                value={formData.odometer}
+                                onChange={handleCommonChange}
+                                placeholder="e.g. 45000"
+                                min="0"
+                                step="0.1"
+                                className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* Conditional Fields based on Type */}
+                        {type === 'Fuel' && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {/* Amount */}
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">Amount (Gallons/kWh) *</label>
+                                    <input
+                                        type="number"
+                                        name="amount"
+                                        value={fuelData.amount}
+                                        onChange={handleFuelChange}
+                                        placeholder="e.g. 12.5"
+                                        required
+                                        min="0.1"
+                                        step="0.001"
+                                        className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Price per Unit */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-text-secondary mb-1">Price / Unit (Optional)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-2.5 text-text-secondary">$</span>
+                                            <input
+                                                type="number"
+                                                name="pricePerUnit"
+                                                value={fuelData.pricePerUnit}
+                                                onChange={handleFuelChange}
+                                                min="0"
+                                                step="0.001"
+                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Total Cost */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-text-secondary mb-1">Total Cost (Optional)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-2.5 text-text-secondary">$</span>
+                                            <input
+                                                type="number"
+                                                name="totalCost"
+                                                value={formData.totalCost}
+                                                onChange={handleCommonChange}
+                                                min="0"
+                                                step="0.01"
+                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {type === 'Service' && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {/* Service Type */}
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-2">Service Type *</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {SERVICE_TYPES.map((service) => {
+                                            const isSelected = serviceData.serviceType === service;
+                                            return (
+                                                <button
+                                                    key={service}
+                                                    type="button"
+                                                    onClick={() => setServiceData(prev => ({
+                                                        ...prev,
+                                                        serviceType: service,
+                                                        customServiceType: service === 'Other' ? prev.customServiceType : ''
+                                                    }))}
+                                                    className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${isSelected
+                                                        ? 'border-accent bg-accent/10 text-accent shadow-sm ring-1 ring-accent/20'
+                                                        : 'border-border bg-primary text-text-secondary hover:border-accent/50 hover:text-text-primary hover:bg-secondary'
+                                                        }`}
+                                                    aria-pressed={isSelected}
+                                                >
+                                                    {service}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Custom Service Type */}
+                                {serviceData.serviceType === 'Other' && (
+                                    <div className="animate-in fade-in slide-in-from-top-1">
+                                        <label className="block text-sm font-medium text-text-secondary mb-1">Specify Service *</label>
+                                        <input
+                                            type="text"
+                                            name="customServiceType"
+                                            value={serviceData.customServiceType}
+                                            onChange={handleServiceChange}
+                                            placeholder="e.g. Transmission Fluid Change"
+                                            required
+                                            className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Total Cost */}
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">Total Cost (Optional)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2.5 text-text-secondary">$</span>
+                                        <input
+                                            type="number"
+                                            name="totalCost"
+                                            value={formData.totalCost}
+                                            onChange={handleCommonChange}
+                                            min="0"
+                                            step="0.01"
+                                            className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Notes */}
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">Notes (Optional)</label>
+                                    <textarea
+                                        name="notes"
+                                        value={formData.notes}
+                                        onChange={handleCommonChange}
+                                        placeholder="Add any details about the service..."
+                                        rows="3"
+                                        className="w-full bg-primary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none resize-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                    </form>
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-border bg-card flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-secondary rounded-lg transition-colors font-medium"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        form="activity-form"
+                        disabled={loading}
+                        className="px-6 py-2 bg-accent hover:bg-accent-hover text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:text-white"
+                    >
+                        {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                        Save Activity
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ActivityModal;

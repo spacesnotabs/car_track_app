@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Fuel, Loader2 } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import VehicleCard from '../components/Dashboard/VehicleCard';
 import AlertSection from '../components/Dashboard/AlertSection';
 import ActivitySection from '../components/Dashboard/ActivitySection';
-import FuelLogModal from '../components/Dashboard/FuelLogModal';
+import ActivityModal from '../components/Dashboard/ActivityModal';
 import { vehicleService } from '../services/vehicleService';
 import { auth } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -12,7 +12,7 @@ const Dashboard = () => {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
-    const [isFuelModalOpen, setIsFuelModalOpen] = useState(false);
+    const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
 
     // Mock Data for other sections (to be connected later)
     const alerts = [
@@ -36,7 +36,7 @@ const Dashboard = () => {
         return () => unsubscribe();
     }, []);
 
-    // Calculate current odometer based on manual setting + fuel logs after that timestamp
+    // Calculate current odometer based on manual setting + logs after that timestamp
     const calculateCurrentOdometer = (vehicle, logs) => {
         const manualOdometer = vehicle.odometer || 0;
         const manualUpdateTime = vehicle.odometerUpdatedAt ? new Date(vehicle.odometerUpdatedAt) : new Date(0);
@@ -68,7 +68,7 @@ const Dashboard = () => {
             let allLogs = [];
             const vehiclesWithStats = await Promise.all(vehiclesData.map(async (vehicle) => {
                 try {
-                    const logs = await vehicleService.getFuelLogs(vehicle.id);
+                    const logs = await vehicleService.getActivities(vehicle.id);
 
                     // Add vehicle info to logs for the activity feed
                     const logsWithVehicle = logs.map(log => ({
@@ -98,14 +98,27 @@ const Dashboard = () => {
             const recentActivities = allLogs
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .slice(0, 10)
-                .map(log => ({
-                    id: log.id,
-                    type: 'Fuel',
-                    title: 'Fuel-up',
-                    vehicle: log.vehicleName,
-                    details: `${log.amount} ${log.fuelType === 'Electric' ? 'kWh' : 'gal'} at $${log.pricePerUnit}/${log.fuelType === 'Electric' ? 'kWh' : 'gal'}`,
-                    date: log.date
-                }));
+                .map(log => {
+                    let details = '';
+                    let title = '';
+
+                    if (log.type === 'Fuel') {
+                        title = 'Fuel-up';
+                        details = `${log.amount} ${log.fuelType === 'Electric' ? 'kWh' : 'gal'} at $${log.pricePerUnit || '-'}/${log.fuelType === 'Electric' ? 'kWh' : 'gal'}`;
+                    } else {
+                        title = log.serviceType || 'Service';
+                        details = log.totalCost ? `$${log.totalCost.toFixed(2)}` : (log.notes || 'No details');
+                    }
+
+                    return {
+                        id: log.id,
+                        type: log.type || 'Fuel',
+                        title: title,
+                        vehicle: log.vehicleName,
+                        details: details,
+                        date: log.date
+                    };
+                });
 
             setActivities(recentActivities);
 
@@ -121,17 +134,29 @@ const Dashboard = () => {
             <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary mb-2">My Garage</h1>
-                    <p className="text-slate-400">An overview of all your vehicles and recent activity.</p>
+                    <p className="text-text-secondary">An overview of all your vehicles and recent activity.</p>
                 </div>
                 <div className="flex gap-3">
-
                     <button
-                        onClick={() => setIsFuelModalOpen(true)}
+                        onClick={() => setIsActivityModalOpen(true)}
                         className="btn btn-outline flex items-center gap-2 text-text-primary border-border hover:bg-secondary"
                     >
-                        <Fuel size={20} />
-                        Add Fuel Log
+                        <Plus size={20} />
+                        Add Activity
                     </button>
+                </div>
+            </div>
+
+            <div className="mb-8">
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Find a vehicle by name or model..."
+                        className="w-full md:w-96 bg-secondary/50 border border-border text-text-primary px-4 py-3 pl-10 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
+                    />
+                    <div className="absolute left-3 top-3.5 text-text-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
                 </div>
             </div>
 
@@ -139,7 +164,7 @@ const Dashboard = () => {
                 <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {loading ? (
                         <div className="col-span-full flex justify-center py-12">
-                            <Loader2 className="animate-spin text-blue-500" size={32} />
+                            <Loader2 className="animate-spin text-accent" size={32} />
                         </div>
                     ) : vehicles.length > 0 ? (
                         vehicles.map(vehicle => (
@@ -167,9 +192,9 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <FuelLogModal
-                isOpen={isFuelModalOpen}
-                onClose={() => setIsFuelModalOpen(false)}
+            <ActivityModal
+                isOpen={isActivityModalOpen}
+                onClose={() => setIsActivityModalOpen(false)}
                 onSave={fetchData}
             />
         </div>
