@@ -180,7 +180,7 @@ const ManageVehicles = () => {
 
                     {loading ? (
                         <div className="flex justify-center py-12">
-                            <Loader2 className="animate-spin text-blue-500" size={32} />
+                            <Loader2 className="animate-spin text-accent" size={32} />
                         </div>
                     ) : (
                         <div className="space-y-4">
