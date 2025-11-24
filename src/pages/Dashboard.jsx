@@ -83,7 +83,7 @@ const Dashboard = () => {
 
                     return {
                         ...vehicle,
-                        name: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+                        name: [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || 'Unknown Vehicle',
                         currentOdometer,
                         averageConsumption: efficiency ? `${efficiency} ${vehicle.fuelType === 'Electric' ? 'mi/kWh' : 'MPG'}` : 'N/A'
                     };
