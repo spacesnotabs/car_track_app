@@ -405,7 +405,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                             name="customServiceType"
                                             value={serviceData.customServiceType}
                                             onChange={handleCustomServiceChange}
-                                            placeholder="e.g. Transmission Fluid Change"
+                                            placeholder="e.g. Transmission Flush, Differential Service"
                                             required
                                             className="w-full bg-secondary border border-border text-text-primary rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
                                         />
