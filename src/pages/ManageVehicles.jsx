@@ -145,6 +145,7 @@ const ManageVehicles = () => {
                                                                 setIsEditModalOpen(true);
                                                             }}
                                                             className="p-2 text-text-secondary hover:text-text-primary hover:bg-secondary rounded-lg transition-colors"
+                                                            title="Edit"
                                                         >
                                                             <Edit2 size={18} />
                                                         </button>
