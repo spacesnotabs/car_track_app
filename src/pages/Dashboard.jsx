@@ -148,18 +148,7 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="mb-8">
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Find a vehicle by name or model..."
-                        className="w-full md:w-96 bg-secondary/50 border border-border text-text-primary px-4 py-3 pl-12 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
-                    />
-                    <div className="absolute left-3 top-3.5 text-text-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </div>
-                </div>
-            </div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">

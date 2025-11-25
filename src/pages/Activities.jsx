@@ -250,7 +250,7 @@ const Activities = () => {
                         placeholder="Search by vehicle, type, or notes..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-12 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
+                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-14 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
                     />
                     <Search className="absolute left-3 top-3 text-text-secondary" size={18} />
                 </div>
@@ -259,7 +259,7 @@ const Activities = () => {
                     <select
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
-                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-12 rounded-lg focus:outline-none focus:border-accent appearance-none cursor-pointer"
+                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-14 rounded-lg focus:outline-none focus:border-accent appearance-none cursor-pointer"
                     >
                         <option value="All">All Activities</option>
                         <option value="Fuel">Fuel Logs</option>
@@ -323,8 +323,8 @@ const Activities = () => {
                                         </td>
                                         <td className="p-4">
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity.type === 'Fuel'
-                                                    ? 'bg-accent/10 text-accent'
-                                                    : 'bg-secondary text-text-secondary'
+                                                ? 'bg-accent/10 text-accent'
+                                                : 'bg-secondary text-text-secondary'
                                                 }`}>
                                                 {activity.type === 'Fuel' ? <Fuel size={16} /> : <Wrench size={16} />}
                                             </div>
@@ -332,7 +332,7 @@ const Activities = () => {
                                         <td className="p-4 text-text-secondary whitespace-nowrap">
                                             {new Date(activity.date).toLocaleDateString()}
                                             <div className="text-xs text-text-secondary/70">
-                                                {new Date(activity.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                {new Date(activity.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         </td>
                                         <td className="p-4 text-text-primary font-medium whitespace-nowrap">
