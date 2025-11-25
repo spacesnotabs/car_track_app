@@ -252,7 +252,7 @@ const Activities = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-10 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
                     />
-                    <Search className="absolute left-3 top-3 text-text-secondary" size={18} />
+                    <Search className="absolute left-3 top-3 text-text-secondary pointer-events-none" size={18} />
                 </div>
 
                 <div className="relative w-full md:w-48">
@@ -265,7 +265,7 @@ const Activities = () => {
                         <option value="Fuel">Fuel Logs</option>
                         <option value="Service">Service</option>
                     </select>
-                    <Filter className="absolute left-3 top-3 text-text-secondary" size={18} />
+                    <Filter className="absolute left-3 top-3 text-text-secondary pointer-events-none" size={18} />
                 </div>
 
                 <button
