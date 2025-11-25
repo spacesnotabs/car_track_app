@@ -250,7 +250,7 @@ const Activities = () => {
                         placeholder="Search by vehicle, type, or notes..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-14 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
+                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-10 rounded-lg focus:outline-none focus:border-accent placeholder-text-secondary"
                     />
                     <Search className="absolute left-3 top-3 text-text-secondary pointer-events-none" size={18} />
                 </div>
@@ -259,7 +259,7 @@ const Activities = () => {
                     <select
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
-                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-14 rounded-lg focus:outline-none focus:border-accent appearance-none cursor-pointer"
+                        className="w-full bg-secondary/50 border border-border text-text-primary px-4 py-2.5 pl-10 rounded-lg focus:outline-none focus:border-accent appearance-none cursor-pointer"
                     >
                         <option value="All">All Activities</option>
                         <option value="Fuel">Fuel Logs</option>
