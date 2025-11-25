@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Car, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, Car, Loader2, Gauge, Fuel, GitCommitHorizontal } from 'lucide-react';
 import EditVehicleModal from '../components/ManageVehicles/EditVehicleModal';
 import { vehicleService } from '../services/vehicleService';
 import { auth } from '../services/firebase';
@@ -111,6 +111,91 @@ const ManageVehicles = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Current Vehicles List */}
+                <div className="lg:col-span-8">
+                    <h2 className="text-xl font-bold text-text-primary mb-6">Your Current Vehicles</h2>
+
+                    {loading ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="animate-spin text-accent" size={32} />
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {vehicles.map(vehicle => (
+                                <div key={vehicle.id} className="bg-card border border-border rounded-xl group hover:border-border transition-colors overflow-hidden">
+                                    <div className="p-5">
+                                        <div className="flex flex-col sm:flex-row gap-5">
+                                            {/* Image */}
+                                            <div className="w-full sm:w-48 h-32 rounded-lg overflow-hidden bg-secondary border border-border flex items-center justify-center text-accent flex-shrink-0">
+                                                {vehicle.image ? (
+                                                    <img src={vehicle.image} alt={`${vehicle.year} ${vehicle.make}`} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Car size={32} />
+                                                )}
+                                            </div>
+
+                                            {/* Details */}
+                                            <div className="flex-grow">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="text-text-primary font-bold text-lg">{vehicle.year} {vehicle.make} {vehicle.model}</h3>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingVehicle(vehicle);
+                                                                setIsEditModalOpen(true);
+                                                            }}
+                                                            className="p-2 text-text-secondary hover:text-text-primary hover:bg-secondary rounded-lg transition-colors"
+                                                        >
+                                                            <Edit2 size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(vehicle.id)}
+                                                            className="p-2 text-text-secondary hover:text-danger hover:bg-secondary rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <p className="text-text-secondary text-sm">{vehicle.nickname || 'No nickname'}</p>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 mt-4 text-sm">
+                                                    <div className="flex items-center gap-2 text-text-secondary">
+                                                        <Gauge size={16} className="text-accent" />
+                                                        <span>{vehicle.odometer ? `${vehicle.odometer.toLocaleString()} miles` : '0 miles'}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-text-secondary">
+                                                        <Fuel size={16} className="text-accent" />
+                                                        <span>{vehicle.fuelType || 'N/A'}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-text-secondary">
+                                                        <GitCommitHorizontal size={16} className="text-accent" />
+                                                        <span className="font-mono">{vehicle.vin || 'No VIN'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {/* Empty State / Placeholder */}
+                            {vehicles.length === 0 && (
+                                <div className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center text-center">
+                                    <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center text-text-secondary mb-4">
+                                        <Plus size={32} />
+                                    </div>
+                                    <h3 className="text-text-primary font-bold text-lg mb-2">No vehicles added yet</h3>
+                                    <p className="text-text-secondary max-w-sm">
+                                        {user
+                                            ? "You haven't added any vehicles to your garage. Use the form on the right to get started and keep track of your cars."
+                                            : "Please log in to view and manage your vehicles."
+                                        }
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* Add New Vehicle Form */}
                 <div className="lg:col-span-4">
                     <div className="bg-card border border-border rounded-xl p-6">
@@ -216,70 +301,6 @@ const ManageVehicles = () => {
                             </div>
                         </form>
                     </div>
-                </div>
-
-                {/* Current Vehicles List */}
-                <div className="lg:col-span-8">
-                    <h2 className="text-xl font-bold text-text-primary mb-6">Your Current Vehicles</h2>
-
-                    {loading ? (
-                        <div className="flex justify-center py-12">
-                            <Loader2 className="animate-spin text-accent" size={32} />
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {vehicles.map(vehicle => (
-                                <div key={vehicle.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between group hover:border-border transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 bg-secondary rounded-lg overflow-hidden border border-border flex items-center justify-center text-accent">
-                                            {vehicle.image ? (
-                                                <img src={vehicle.image} alt={`${vehicle.year} ${vehicle.make}`} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <Car size={24} />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-text-primary font-bold">{vehicle.year} {vehicle.make} {vehicle.model}</h3>
-                                            <p className="text-text-secondary text-sm font-mono">VIN: {vehicle.vin || 'Not specified'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => {
-                                                setEditingVehicle(vehicle);
-                                                setIsEditModalOpen(true);
-                                            }}
-                                            className="p-2 text-text-secondary hover:text-text-primary hover:bg-secondary rounded-lg transition-colors"
-                                        >
-                                            <Edit2 size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(vehicle.id)}
-                                            className="p-2 text-text-secondary hover:text-danger hover:bg-secondary rounded-lg transition-colors"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {/* Empty State / Placeholder */}
-                            {vehicles.length === 0 && (
-                                <div className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center text-center">
-                                    <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center text-text-secondary mb-4">
-                                        <Plus size={32} />
-                                    </div>
-                                    <h3 className="text-text-primary font-bold text-lg mb-2">No vehicles added yet</h3>
-                                    <p className="text-text-secondary max-w-sm">
-                                        {user
-                                            ? "You haven't added any vehicles to your garage. Use the form on the left to get started and keep track of your cars."
-                                            : "Please log in to view and manage your vehicles."
-                                        }
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
 
