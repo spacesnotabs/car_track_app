@@ -348,7 +348,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                     <div>
                                         <label className="block text-sm font-medium text-text-secondary mb-1">Price / Unit (Optional)</label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-2.5 text-text-secondary">$</span>
+                                            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-secondary">$</span>
                                             <input
                                                 type="number"
                                                 name="pricePerUnit"
@@ -356,7 +356,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                                 onChange={handleFuelChange}
                                                 min="0"
                                                 step="0.001"
-                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-8 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                             />
                                         </div>
                                     </div>
@@ -365,7 +365,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                     <div>
                                         <label className="block text-sm font-medium text-text-secondary mb-1">Total Cost (Optional)</label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-2.5 text-text-secondary">$</span>
+                                            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-secondary">$</span>
                                             <input
                                                 type="number"
                                                 name="totalCost"
@@ -373,7 +373,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                                 onChange={handleCommonChange}
                                                 min="0"
                                                 step="0.01"
-                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                                className="w-full bg-primary border border-border text-text-primary rounded-lg pl-8 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                             />
                                         </div>
                                     </div>
@@ -388,12 +388,15 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                     <label className="block text-sm font-medium text-text-secondary mb-2">Service Types *</label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {SERVICE_TYPES.map(t => (
-                                            <label key={t} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50 border border-border hover:border-accent/50 cursor-pointer transition-colors">
+                                            <label
+                                                key={t}
+                                                className="flex items-center justify-start gap-2 p-2 rounded-lg bg-secondary/50 cursor-pointer transition-colors"
+                                            >
                                                 <input
                                                     type="checkbox"
                                                     checked={serviceData.selectedServices.includes(t)}
                                                     onChange={() => handleServiceToggle(t)}
-                                                    className="rounded border-border bg-secondary text-accent focus:ring-accent"
+                                                    className="h-4 w-4 shrink-0 rounded border-border bg-secondary text-accent focus:ring-accent focus:ring-offset-0 mr-2"
                                                 />
                                                 <span className="text-text-primary text-sm">{t}</span>
                                             </label>
@@ -424,7 +427,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                 <div>
                                     <label className="block text-sm font-medium text-text-secondary mb-1">Total Cost (Optional)</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-2.5 text-text-secondary">$</span>
+                                        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-secondary">$</span>
                                         <input
                                             type="number"
                                             name="totalCost"
@@ -432,7 +435,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                                             onChange={handleCommonChange}
                                             min="0"
                                             step="0.01"
-                                            className="w-full bg-primary border border-border text-text-primary rounded-lg pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                            className="w-full bg-primary border border-border text-text-primary rounded-lg pl-8 pr-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                                         />
                                     </div>
                                 </div>
@@ -468,7 +471,7 @@ const ActivityModal = ({ isOpen, onClose, preSelectedVehicleId, onSave, initialD
                         type="submit"
                         form="activity-form"
                         disabled={loading}
-                        className="px-6 py-2 bg-accent hover:bg-accent-hover text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:text-white"
+                        className="px-6 py-2 bg-accent hover:bg-accent-hover text-[var(--text-primary)] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:text-[var(--text-primary)]"
                     >
                         {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Save Activity

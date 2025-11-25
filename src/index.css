@@ -93,7 +93,7 @@ button {
 }
 
 /* Form Elements */
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   background-color: var(--bg-primary);
@@ -118,6 +118,24 @@ label {
   margin-bottom: 0.25rem;
   display: block;
 }
+
+/* Theme utility shims so custom palette classes stay available even if Tailwind misses them */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-card { background-color: var(--bg-card); }
+.text-text-primary { color: var(--text-primary); }
+.text-text-secondary { color: var(--text-secondary); }
+.text-accent { color: var(--accent-primary); }
+.hover\:text-accent:hover { color: var(--accent-primary); }
+.border-border { border-color: var(--border-color); }
+.border-accent { border-color: var(--accent-primary); }
+.hover\:border-accent:hover { border-color: var(--accent-primary); }
+.bg-accent { background-color: var(--accent-primary); }
+.bg-accent-hover { background-color: var(--accent-hover); }
+.hover\:bg-accent-hover:hover { background-color: var(--accent-hover); }
+.bg-accent\/10 { background-color: color-mix(in srgb, var(--accent-primary) 10%, transparent); }
+.hover\:bg-accent\/10:hover { background-color: color-mix(in srgb, var(--accent-primary) 10%, transparent); }
+.focus\:ring-accent:focus { --tw-ring-color: var(--accent-primary); }
 
 /* Theme helpers */
 .text-danger { color: var(--danger); }

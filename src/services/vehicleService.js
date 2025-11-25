@@ -20,6 +20,10 @@ const sanitizeFileName = (name) => {
 const uploadVehicleImage = async (file, userId, vehicleId = 'vehicle') => {
     if (!file) return null;
 
+    if (!storage) {
+        throw new Error('Image upload is unavailable: Firebase Storage is not configured.');
+    }
+
     if (file.type && !ACCEPTED_IMAGE_TYPES.includes(file.type)) {
         throw new Error('Unsupported image type. Please upload a JPG, PNG, WEBP, HEIC/HEIF, or GIF file.');
     }
