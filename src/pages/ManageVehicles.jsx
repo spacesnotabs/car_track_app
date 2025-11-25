@@ -152,6 +152,7 @@ const ManageVehicles = () => {
                                                         <button
                                                             onClick={() => handleDelete(vehicle.id)}
                                                             className="p-2 text-text-secondary hover:text-danger hover:bg-secondary rounded-lg transition-colors"
+                                                            title="Delete"
                                                         >
                                                             <Trash2 size={18} />
                                                         </button>
